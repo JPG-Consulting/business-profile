@@ -1,62 +1,87 @@
-/* Frontend Javascript for Business Profile maps */
-jQuery(document).ready(function ($) {
+/* global bpfwpMapVars, google */
+/**
+ * Front-end JavaScript for Business Profile maps
+ *
+ * @copyright Copyright (c) 2015, Theme of the Crop
+ * @license   GPL-2.0+
+ * @since     0.0.1
+ */
 
-	// Load Google Maps API and initialize maps
-	var bp_map_script = document.createElement( 'script' );
-	bp_map_script.type = 'text/javascript';
-	bp_map_script.src = 'https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&callback=bp_initialize_map';
-	document.body.appendChild( bp_map_script );
+ /**
+  * Set up a map using the Google Maps API and data attributes added to `.bp-map`
+  * elements on a given page.
+  *
+  * @uses  Google Maps API (https://developers.google.com/maps/web/)
+  * @since 1.1.0
+  */
+function bpInitializeMap() {
+	'use strict';
 
-});
+	jQuery( '.bp-map' ).each(function() {
+		var bpMaps        = [],
+			bpInfoWindows = [],
+			$that         = jQuery( this ),
+			id            = $that.attr( 'id' ),
+			data          = $that.data(),
+			strings       = bpfwpMapVars.strings,
+			latLon, bpMapOptions, content, bpMapIframe;
 
-function bp_initialize_map() {
-
-	var bp_maps = [];
-	var bp_info_windows = [];
-
-	jQuery( '.bp-map' ).each( function() {
-		var id = jQuery(this).attr( 'id' );
-		var data = jQuery(this).data();
+		data.addressURI = encodeURIComponent( data.address.replace( /(<([^>]+)>)/ig, ', ' ) );
 
 		// Google Maps API v3
-		if ( typeof data.lat !== 'undefined' ) {
-			var latlon = new google.maps.LatLng( data.lat, data.lon );
-			var bp_map_options = {
-				zoom: 15,
-				center: latlon,
+		if ( 'undefined' !== typeof data.lat ) {
+			latLon       = new google.maps.LatLng( data.lat, data.lon );
+			bpMapOptions = {
+				zoom:   15,
+				center: latLon
 			};
+			bpMaps[ id ] = new google.maps.Map( document.getElementById( id ), bpMapOptions );
 
-			bp_maps[ id ] = new google.maps.Map( document.getElementById( id ), bp_map_options );
-			
-			var content = '<div class="bp-map-info-window">' +
-				'<p><strong>' + data.name + '</strong></p>' + 
-				'<p>' + data.address + '</p>';
-				
-			if ( typeof data.phone !== 'undefined' ) {
+			content = '<div class="bp-map-info-window">' + '<p><strong>' + data.name + '</strong></p>' + '<p>' + data.address + '</p>';
+			if ( 'undefined' !== typeof data.phone ) {
 				content += '<p>' + data.phone + '</p>';
 			}
-			content += '<p><a target="_blank" href="//maps.google.com/maps?saddr=current+location&daddr=' + encodeURIComponent( data.address ) + '">Get Directions</a></p>' +
-				'</div>';
-			
-			bp_info_windows[ id ] = new google.maps.InfoWindow({
-				position: latlon,
-				content: content,
-			});
-			bp_info_windows[ id ].open( bp_maps[ id ]);
+			content += '<p><a target="_blank" href="//maps.google.com/maps?saddr=current+location&daddr=' + data.addressURI + '">' + strings.getDirections + '</a></p>' + '</div>';
+
+			bpInfoWindows[ id ] = new google.maps.InfoWindow( {
+				position: latLon,
+				content:  content
+			} );
+			bpInfoWindows[ id ].open( bpMaps[ id ] );
 
 		// Google Maps iframe embed (fallback if no lat/lon data available)
-		} else if ( typeof data.address !== '' ) {
-			var bp_map_iframe = document.createElement( 'iframe' );
-			bp_map_iframe.frameBorder = 0;
-			bp_map_iframe.style.width = '100%';
-			bp_map_iframe.style.height = '100%';
+		} else if ( '' !== data.address ) {
+			bpMapIframe = document.createElement( 'iframe' );
 
-			if ( typeof data.name !== '' ) {
+			bpMapIframe.frameBorder  = 0;
+			bpMapIframe.style.width  = '100%';
+			bpMapIframe.style.height = '100%';
+
+			if ( '' !== data.name ) {
 				data.address = data.name + ',' + data.address;
 			}
-			bp_map_iframe.src = '//maps.google.com/maps?output=embed&q=' + encodeURIComponent( data.address );
+			bpMapIframe.src = '//maps.google.com/maps?output=embed&q=' + data.addressURI;
 
-			jQuery(this).html( bp_map_iframe );
+			$that.html( bpMapIframe );
 		}
 	});
 }
+
+/**
+ * Backwards-compatable alias function.
+ *
+ * @since 1.1.0
+ */
+function bp_initialize_map() {
+	bpInitializeMap();
+}
+
+jQuery( document ).ready(function() {
+	// Load Google Maps API and initialize maps
+	var bpMapScript = document.createElement( 'script' );
+
+	bpMapScript.type = 'text/javascript';
+	bpMapScript.src  = 'https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&callback=bpInitializeMap';
+
+	document.body.appendChild( bpMapScript );
+});

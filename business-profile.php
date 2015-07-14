@@ -9,7 +9,7 @@
  * License:     GNU General Public License v2.0 or later
  * License URI: http://www.gnu.org/licenses/gpl-2.0.html
  *
- * Text Domain: bpfwpdomain
+ * Text Domain: business-profile
  * Domain Path: /languages/
  *
  * This program is free software; you can redistribute it and/or modify it under the terms of the GNU
